@@ -4,14 +4,11 @@
 #include <avr/io.h>
 #include <stdio.h>
 #include <util\delay.h>
-#include "revboot.h"
+#include "revprog.h"
+#include "getASAcmd.h"
 
 void (*main_entry_point)(void) = 0x0000;
 
-void prog_init(void);
-void prog_putc(uint8_t data);
-uint8_t prog_getc();
-uint8_t get_data(uint8_t *buf, uint16_t *bytes);
 void send_OK();
 void send_OK2();
 void boot_program_page (uint32_t page, uint8_t *buf);
@@ -29,14 +26,14 @@ int main(void) {
         uint8_t res = 0;
         uint16_t bytes=0;
         uint32_t page = 0;
-        get_data(buf,&bytes);
+        get_ASA_prog_cmd(buf,&bytes);
         _delay_ms(30);
         send_OK();
-        res = get_data(buf,&bytes);
+        res = get_ASA_prog_cmd(buf,&bytes);
         while(bytes==SPM_PAGESIZE){
             boot_program_page(page,buf);
             page += SPM_PAGESIZE;
-            res = get_data(buf,&bytes);
+            res = get_ASA_prog_cmd(buf,&bytes);
             _delay_ms(5);
         }
         if (bytes) {
@@ -85,25 +82,6 @@ void send_OK() {
     prog_putc('!');
     prog_putc('!');
     prog_putc(0xC4);
-}
-
-void prog_init(void) {
-    PROG_UBRRL = BAUD_PRESCALE;
-    PROG_UBRRH = (BAUD_PRESCALE >> 8);
-    PROG_UCSRB = ((1<<TXEN0)|(1<<RXEN0));
-    PROG_UCSRC |= (3<<UCSZ10);
-}
-
-void prog_putc(uint8_t data) {
-  // Wait until last byte has been transmitted
-  while((PROG_UCSRA &(1<<UDRE0)) == 0);
-  // Transmit data
-  PROG_UDR = data;
-}
-
-uint8_t prog_getc() {
-  while((PROG_UCSRA &(1<<RXC0)) == 0);
-  return PROG_UDR;
 }
 
 void boot_program_page (uint32_t page, uint8_t *buf) {
