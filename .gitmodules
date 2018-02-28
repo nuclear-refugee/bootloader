@@ -1,0 +1,3 @@
+[submodule "revlib"]
+	path = revlib
+	url = https://github.com/nuclear-refugee/rev_avr_lib
