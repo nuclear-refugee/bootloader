@@ -16,23 +16,29 @@ void boot_program_page (uint32_t page, uint8_t *buf);
 Addres_t CurAddres; ///< Recording the current memory location to write.
 // uint8_t Sequence = 0; ///< Recording the current sequence of STK500 packet.
 
-inline uint8_t bootloader_active() {
+inline static uint8_t bootloader_active() {
     DDRG = 0;
+    _delay_ms(10);
     return !(PING&0x01);
 }
 
 int main(void) {
     rev_serial_init();
 
+    // uint8_t get_cmd_res;
+    uint8_t spires[4]; ///< 接收下達給待燒錄裝置的4byte spi命令
+    uint32_t page = 0;
+    uint8_t res = 0;
+
     if(bootloader_active()) {
-        uint8_t res = 0;
+        res = 0;
         do {
             res = get_msg();
         } while( res == RES_ERROR);
 
         if (res == RES_ASAPROG) {
+             __asm__ ("nop");
 
-            uint32_t page = 0;
             _delay_ms(30);
             put_msg_asaprog_OK();
             res = get_msg();
@@ -49,14 +55,10 @@ int main(void) {
             put_msg_asaprog_OK();
 
         } else if (res == RES_STK500) {
-
-            uint8_t get_cmd_res;
-            uint8_t spires[4]; ///< 接收下達給待燒錄裝置的4byte spi命令
-            while (1) {
-                get_cmd_res = get_msg();
-                if (get_cmd_res) {
-                    /* TODO error out*/
-                }
+            __asm__ ("nop");
+            do {
+                __asm__ ("nop");
+                // Start switch STK command ------------------------------------
                 // ***[ STK general command constants ]********************************
                 switch (MsgGet.data[0]) {
                     case CMD_SIGN_ON: {
@@ -78,7 +80,7 @@ int main(void) {
                     case CMD_SET_PARAMETER: {
                         uint8_t id = MsgGet.data[1];
                         uint8_t value = MsgGet.data[2];
-                        uint8_t res = isp_set_param(id,value);
+                        res = isp_set_param(id,value);
                         if(res) {
                             MsgRes.bytes = 2;
                             MsgRes.data[0] = CMD_SET_PARAMETER;
@@ -95,7 +97,7 @@ int main(void) {
                     case CMD_GET_PARAMETER: {
                         uint8_t id = MsgGet.data[1];
                         uint8_t value = 1;
-                        uint8_t res = isp_get_param(id, &value);
+                        res = isp_get_param(id, &value);
                         if(res) {
                             MsgRes.bytes = 2;
                             MsgRes.data[0] = CMD_GET_PARAMETER;
@@ -163,9 +165,9 @@ int main(void) {
                         //     // TODO timeout
                         //     MsgRes.data[1] = STATUS_CMD_TOUT;
                         // } else {
-                            MsgRes.bytes = 2;
-                            MsgRes.data[1] = STATUS_CMD_OK;
-                            put_msg_in_stk500(&MsgRes);
+                        MsgRes.bytes = 2;
+                        MsgRes.data[1] = STATUS_CMD_OK;
+                        put_msg_in_stk500(&MsgRes);
                         // }
                         break;
                     }
@@ -363,7 +365,7 @@ int main(void) {
                         spi_swap(MsgGet.data[2]);
                         spi_swap(MsgGet.data[3]);
                         spi_swap(MsgGet.data[4]);
-                        uint8_t res = spi_swap(MsgGet.data[5]);
+                        res = spi_swap(MsgGet.data[5]);
                         MsgRes.bytes = 4;
                         MsgRes.data[0] = CMD_READ_OSCCAL_ISP;
                         MsgRes.data[1] = STATUS_CMD_OK;
@@ -397,10 +399,12 @@ int main(void) {
                         put_msg_in_stk500(&MsgRes);
                         break;
                     }
-
                 }
-            }
-            return 0;
+                // End switch STK command --------------------------------------
+                __asm__ ("nop");
+                get_msg();
+                // TODO error out
+            } while(1);
         } else {
             return 0;
         }
