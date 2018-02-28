@@ -23,7 +23,7 @@ inline static uint8_t bootloader_active() {
 }
 
 int main(void) {
-    rev_serial_init();
+    serial_init();
 
     // uint8_t get_cmd_res;
     uint8_t spires[4]; ///< 接收下達給待燒錄裝置的4byte spi命令
