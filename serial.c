@@ -1,6 +1,5 @@
 #include "serial.h"
 #include "revlib/rev_DEVICE.h"
-#include "revlib/rev_serial.h"
 #include <stdio.h>
 
 inline uint8_t serial_get() {

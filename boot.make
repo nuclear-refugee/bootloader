@@ -6,6 +6,7 @@
 MCU_TARGET    = atmega128
 # Target device to be used (32K or larger)
 BOOT_ADR      = 0x01E000
+# BOOT_ADR      = 0x000000
 # Boot loader start address [byte] NOT [word] as in http://eleccelerator.com/fusecalc/fusecalc.php?chip=atmega1284p
 F_CPU         = 11059200
 # CPU clock frequency [Hz] NOT critical: it just should be higher than the actual Hz

@@ -6,6 +6,8 @@
 #include <util\delay.h>
 #include "revprog.h"
 #include "getASAcmd.h"
+#include "../revlib/rev_DEVICE.h"
+#include "../revlib/rev_serial.h"
 
 void (*main_entry_point)(void) = 0x0000;
 
