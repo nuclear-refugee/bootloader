@@ -28,7 +28,7 @@ int main(void) {
                     res = get_ASA_prog_cmd(buf,&bytes);
                     if(res==1) {  // start asaprog cmd
                         status = 1;
-                        // erase_all_flash();
+                        erase_all_flash();
                         put_res_of_start();
                     }
                     break;
