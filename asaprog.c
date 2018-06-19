@@ -1,6 +1,5 @@
 #include <inttypes.h>
 #include "revprog.h"
-#include "getASAcmd.h"
 #include <avr/io.h>
 #include <util\delay.h>
 
