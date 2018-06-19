@@ -6,53 +6,34 @@
 #include "serial.h"
 #include "stk500.h"
 #include "stk500_command.h"
+#include "asaprog.h"
+#include "revprog.h"
 
 #define SPM_PAGESIZE 256
 
-void (*main_entry_point)(void) = 0x0000;
-
-void boot_program_page (uint32_t page, uint8_t *buf);
+uint8_t do_asa_prog();
 
 Addres_t CurAddres; ///< Recording the current memory location to write.
 // uint8_t Sequence = 0; ///< Recording the current sequence of STK500 packet.
-
-inline static uint8_t bootloader_active() {
-    DDRG = 0;
-    _delay_ms(10);
-    return !(PING&0x01);
+void delay_ms(uint16_t t) {
+    for (uint16_t i = 0; i < t; i++) {
+        _delay_ms(1);
+    }
 }
 
 int main(void) {
-    serial_init();
+    if(is_prog_mode()) {
+        serial_init();
 
-    // uint8_t get_cmd_res;
-    uint8_t spires[4]; ///< 接收下達給待燒錄裝置的4byte spi命令
-    uint32_t page = 0;
-    uint8_t res = 0;
+        uint8_t spires[4]; ///< 接收下達給待燒錄裝置的4byte spi命令
+        uint8_t res = 0;
 
-    if(bootloader_active()) {
-        res = 0;
         do {
             res = get_msg();
         } while( res == RES_ERROR);
 
         if (res == RES_ASAPROG) {
-             __asm__ ("nop");
-
-            _delay_ms(30);
-            put_msg_asaprog_OK();
-            res = get_msg();
-            while(MsgGet.bytes == SPM_PAGESIZE){
-                boot_program_page(page, MsgGet.data);
-                page += SPM_PAGESIZE;
-                res = get_msg();
-                _delay_ms(5);
-            }
-            if (MsgGet.bytes != 0) {
-                boot_program_page(page, MsgGet.data);
-            }
-            _delay_ms(30);
-            put_msg_asaprog_OK();
+            res = do_asa_prog();
 
         } else if (res == RES_STK500) {
             __asm__ ("nop");
@@ -193,23 +174,18 @@ int main(void) {
                         // 4 cmd2
                         // 5 cmd3
                         // 6 cmd4
-
                         spi_swap(MsgGet.data[3]);
                         spi_swap(MsgGet.data[4]);
                         spi_swap(MsgGet.data[5]);
                         spi_swap(MsgGet.data[6]);
-                        // _delay_ms(MsgGet.data[1]);
 
+                        // TODO RDY/BSY command or delay
+                        delay_ms(MsgGet.data[1]);
+                        
+                        MsgRes.bytes = 2;
                         MsgRes.data[0] = CMD_CHIP_ERASE_ISP;
-                        if (MsgGet.data[6]!=spires[MsgGet.data[7]]) {
-                            MsgRes.bytes = 2;
-                            MsgRes.data[1] = STATUS_CMD_FAILED;
-                            put_msg_in_stk500(&MsgRes);
-                        } else {
-                            MsgRes.bytes = 2;
-                            MsgRes.data[1] = STATUS_CMD_OK;
-                            put_msg_in_stk500(&MsgRes);
-                        }
+                        MsgRes.data[1] = STATUS_CMD_OK;
+                        put_msg_in_stk500(&MsgRes);
 
                         break;
                     }
@@ -413,25 +389,17 @@ int main(void) {
     }
 }
 
-void boot_program_page (uint32_t page, uint8_t *buf) {
-    uint16_t i;
-    uint8_t sreg;
-    // Disable interrupts.
-    sreg = SREG;
-    cli();
-    eeprom_busy_wait ();
-    boot_page_erase (page);
-    boot_spm_busy_wait ();      // Wait until the memory is erased.
-    for (i=0; i<SPM_PAGESIZE; i+=2)
-    {
-        // Set up little-endian word.
-        uint16_t w = *buf++;
-        w += (*buf++) << 8;
+uint8_t do_asa_prog() {
+    uint32_t page = 0;
+    uint8_t res;
 
-        boot_page_fill (page + i, w);
-    }
-    boot_page_write (page);     // Store buffer in flash page.
-    boot_spm_busy_wait();       // Wait until the memory is written.
-    boot_rww_enable ();
-    SREG = sreg;
+    erase_all_flash();
+    put_res_of_start();
+    do{
+        res = get_msg();
+        program_page(page, MsgGet.data);
+        page += SPM_PAGESIZE;
+    }while(MsgGet.bytes != 0);
+    put_res_of_last();
+    return 0;
 }
