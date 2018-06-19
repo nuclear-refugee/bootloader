@@ -4,6 +4,7 @@ revboot0_csrc =  decode_msg.c revboot0.c serial.c stk500.c
 revboot0_csrc += revlib\rev_spi.c
 revboot0_csrc += revlib\ASA\ASA_spi.c
 revboot0_csrc += revlib\ASA\ASA_general.c
+revboot0_csrc += revprog.c asaprog.c
 revboot0:
 	make CSRC='$(revboot0_csrc)' TARGET='$(revboot0_target)' -f boot.make
 
