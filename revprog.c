@@ -46,13 +46,11 @@ void program_page (uint32_t page, uint8_t *buf) {
 }
 
 void erase_all_flash() {
-	uint16_t i;
 	uint32_t address = 0;
-	for(i = 0; i < MAX_PROGSIZE; i++) {
+	for(address = 0; address < MAX_PROGSIZE; address+=SPM_PAGESIZE) {
 		boot_page_erase(address);
 		boot_spm_busy_wait();
 		boot_rww_enable();
-		address+=SPM_PAGESIZE;
 	}
 	//boot_rww_enable();
 }
