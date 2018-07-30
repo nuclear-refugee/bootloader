@@ -25,3 +25,13 @@ testcmd_csrc   = test\test_get_data.c getASAcmd.c
 testcmd_target = testcmd
 testcmd:
 	gcc $(testcmd_csrc) -o $(testcmd_target)
+
+# TARGET m128_stk500
+m128_stk500_target = 'm128_stk500'
+m128_stk500_csrc =  decode_msg.c m128_stk500.c serial.c stk500.c
+m128_stk500_csrc += revlib\rev_spi.c
+m128_stk500_csrc += revlib\ASA\ASA_spi.c
+m128_stk500_csrc += revlib\ASA\ASA_general.c
+m128_stk500_csrc += revprog.c asaprog.c
+m128_stk500:
+	make CSRC='$(m128_stk500_csrc)' TARGET='$(m128_stk500_target)' -f boot.make BOOT_ADR=0x00
